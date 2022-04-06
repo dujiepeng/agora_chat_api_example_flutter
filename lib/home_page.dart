@@ -199,13 +199,24 @@ class _HomePageState extends State<HomePage> implements EMChatManagerListener {
         username: _singleChatId!,
         content: _msgContent!,
       );
+      msg.messageStatusCallBack = MessageStatusCallBack(
+        onSuccess: () {
+          addLogToConsole(
+            "send message success: $_msgContent",
+          );
+        },
+        onError: (e) {
+          addLogToConsole(
+            "send message fail ! errDesc : ${e.description}",
+          );
+        },
+      );
       try {
         await EMClient.getInstance.chatManager.sendMessage(msg);
-        log = "send message success: $_msgContent";
       } on EMError catch (e) {
         log = "send message fail ! errDesc : ${e.description}";
       }
-      _msgContent = null;
+      setState(() {});
     } while (false);
 
     addLogToConsole(log);
@@ -237,9 +248,24 @@ class _HomePageState extends State<HomePage> implements EMChatManagerListener {
         EMMessage msg = EMMessage.createImageSendMessage(
             username: _singleChatId!, filePath: pickedFile!.path);
 
-        await EMClient.getInstance.chatManager.sendMessage(msg);
+        msg.messageStatusCallBack = MessageStatusCallBack(
+          onSuccess: () {
+            addLogToConsole(
+              "send message success ! messageType : ${_getBodyType(msg)}",
+            );
+          },
+          onError: (e) {
+            addLogToConsole(
+              "send message fail ! errDesc : ${e.description}",
+            );
+          },
+        );
 
-        log = "send message success ! messageType : ${_getBodyType(msg)}";
+        try {
+          await EMClient.getInstance.chatManager.sendMessage(msg);
+        } on EMError catch (e) {
+          log = "send message fail ! errDesc : ${e.description}";
+        }
       } on EMError catch (e) {
         log = e.description;
       } catch (e) {
