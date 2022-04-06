@@ -36,40 +36,45 @@ class _HomePageState extends State<HomePage> implements EMChatManagerListener {
   @override
   Widget build(BuildContext context) {
     updateItem();
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: Title(
-          color: Colors.blue,
-          child: const Text("agora chat api example"),
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).requestFocus(FocusNode());
+      },
+      child: Scaffold(
+        // resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+          title: Title(
+            color: Colors.blue,
+            child: const Text("agora chat api example"),
+          ),
         ),
-      ),
-      body: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Flexible(
-            flex: 2,
-            child: ListView.builder(
-              itemBuilder: (_, index) {
-                return Container(
-                  margin: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-                  color: Colors.grey[100],
-                  height: 60,
-                  child: Center(
-                    child: listItem[index],
-                  ),
-                );
-              },
-              itemCount: listItem.length,
+        body: Column(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Flexible(
+              flex: 2,
+              child: ListView.builder(
+                itemBuilder: (_, index) {
+                  return Container(
+                    margin: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                    color: Colors.grey[100],
+                    height: 60,
+                    child: Center(
+                      child: listItem[index],
+                    ),
+                  );
+                },
+                itemCount: listItem.length,
+              ),
             ),
-          ),
-          Flexible(
-            child: TextScrollView(
-              controller: _controller,
-              textList: listStr,
+            Flexible(
+              child: TextScrollView(
+                controller: _controller,
+                textList: listStr,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -108,22 +113,46 @@ class _HomePageState extends State<HomePage> implements EMChatManagerListener {
   }
 
   void signUpAction() async {
-    if (_userId?.isNotEmpty == true || _password?.isNotEmpty == true) {
+    if (_userId?.isNotEmpty == true && _password?.isNotEmpty == true) {
+      String log = "Sign up failure";
+      String? response = await HttpRequestManager.loginToAppServer(
+          username: _userId!, password: _password!);
+      if (response != null) {
+        Map<String, dynamic>? map = convert.jsonDecode(response);
+        if (map != null) {
+          if (map["code"] == "RES_OK") {
+            String? accessToken = map["accessToken"];
+            String? loginName = map["chatUserName"];
+            if (accessToken?.isNotEmpty == true &&
+                loginName?.isNotEmpty == true) {
+              addLogToConsole("login app server success !");
+              try {
+                await EMClient.getInstance
+                    .loginWithAgoraToken(loginName!, accessToken!);
+                log = "login SDK success ! name : $loginName";
+              } on EMError catch (e) {
+                log = e.toString();
+              }
+            }
+          }
+        }
+      }
+      addLogToConsole(log);
     } else {
       addLogToConsole("username or password is null");
     }
   }
 
   void signInAction() async {
-    if (_userId?.isNotEmpty == true || _password?.isNotEmpty == true) {
-      String log = "Sign up failure";
+    if (_userId?.isNotEmpty == true && _password?.isNotEmpty == true) {
+      String log = "Sign in failure";
       String? response = await HttpRequestManager.registerToAppServer(
           username: _userId!, password: _password!);
       if (response != null) {
         Map<String, dynamic>? map = convert.jsonDecode(response);
         if (map != null) {
-          if (map["code"] == "RES_0K") {
-            log = "Sign up success";
+          if (map["code"] == "RES_OK") {
+            log = "Sign in success";
           }
         }
       }
